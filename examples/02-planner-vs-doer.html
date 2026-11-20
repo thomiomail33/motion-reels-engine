@@ -1,0 +1,65 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+@font-face{font-family:SM;font-weight:400;src:url(fonts/space-mono-latin-400-normal.woff2)}
+@font-face{font-family:SM;font-weight:700;src:url(fonts/space-mono-latin-700-normal.woff2)}
+@font-face{font-family:SF;font-weight:400;font-style:normal;src:url(fonts/instrument-serif-latin-400-normal.woff2)}
+@font-face{font-family:SF;font-weight:400;font-style:italic;src:url(fonts/instrument-serif-latin-400-italic.woff2)}
+html,body{margin:0;background:#000}canvas{display:block}</style></head><body><canvas id="c" width="1080" height="1920"></canvas>
+<script src="page.js"></script><script src="engine.js"></script><script>
+// ================================================================
+// REEL 002: PLANNER vs DOER                   STRUCTURE: B (two labelled types, one stage)
+// MOMENT:  planning the perfect start instead of starting
+// COUNTER: DAY 1 -> DAY 90 + paper stack height vs staircase height
+// STING:   planner sees the staircase... and writes a new plan: "OKAY. NEW PLAN."
+// SEND TO: the friend with 5 planner apps
+// ================================================================
+const DUR = 12, COVER_T = 10.8, GROUND = 1450;
+window.COVER_TEXT = ['A plan is not', 'a step.'];
+const NS = 7, SW = 56, SH = 64, SX = 630;               // staircase: 7 steps, each 56 x 64, starting at x 630
+const stepT = i => 1.2 + i * .95;                        // when step i appears
+const SC = .62;
+
+function scene(t) {
+  ground(GROUND);
+  spotlight(300, 620, 520, 840, .06); spotlight(820, 620, 520, 840, .06);
+  captions(t, [
+    [0.6, 'SAME 90 DAYS.'],
+    [7.8, 'SAME 90 DAYS.', 'PLANS DON\'T CLIMB.'],
+  ]);
+  counter('DAY ' + Math.max(1, Math.round(90 * ease(P(t, .8, 7.6)))), W / 2, 480);
+  tag('PLANNER', 250, 560, { align: 'center' }); tag('DOER', 830, 560, { align: 'center' });
+
+  // ---------- PLANNER: sits at a desk, the paper stack grows ----------
+  const ch = chair(170, GROUND, .9, false);
+  const tb = table(250, GROUND, 220, .9);
+  const sheets = Math.min(40, Math.floor(P(t, .8, 7.6) * 40) + (t > 9.6 ? 1 : 0));
+  for (let i = 0; i < sheets; i++) { g.fillStyle = i % 2 ? '#e4e1d9' : '#d6d3cb'; g.fillRect(390 + ((i * 7) % 5) - 2, tb.top - 4 - i * 4, 70, 4) }
+  // a few finished plans crumpled on the floor
+  for (let i = 0; i < Math.min(5, Math.floor(P(t, 2, 7) * 5)); i++) { g.fillStyle = '#cfccc4'; g.beginPath(); g.arc(290 + i * 34, GROUND - 12, 12, 0, 7); g.fill() }
+  let pp = POSE.write(t * 14);
+  const look = ease(P(t, 8.4, 8.9)) * (1 - ease(P(t, 9.6, 10.0)));
+  pp = lerpPose(pp, { ...POSE.sit(), neck: -34, lean: -4, uaF: 40, faF: 70 }, look);
+  const pf = figure(170, ch.seat, pp, { scale: SC });
+  if (look < .5) paper(pf.handF[0] + 20, tb.top - 10, .7, 80, .9);
+  if (t > 10.0) bubble('OKAY. NEW PLAN.', pf.head[0] + 40, pf.head[1] - 40, 10.0, t, { size: 30 });
+
+  // ---------- DOER: builds a staircase one step a day, climbs it ----------
+  let built = 0;
+  for (let i = 0; i < NS; i++) {
+    const k = P(t, stepT(i), stepT(i) + .25); if (k <= 0) continue; built = i + 1;
+    const sh = SH * (i + 1), x = SX + i * SW, y = GROUND - sh * back(k);
+    g.fillStyle = '#cfc8bd'; g.fillRect(x, y, SW - 2, GROUND - y); g.strokeStyle = 'rgba(0,0,0,.25)'; g.lineWidth = 2;
+    for (let r = 1; r <= i + 1; r++) { g.beginPath(); g.moveTo(x, GROUND - r * SH); g.lineTo(x + SW - 2, GROUND - r * SH); g.stroke() }
+  }
+  // standing position: on top of the newest step it has hopped onto
+  let cur = -1, hop = 0;
+  for (let i = 0; i < NS; i++) { const h0 = stepT(i) + .35; if (t >= h0) { cur = i; hop = P(t, h0, h0 + .35) } }
+  const xAt = i => i < 0 ? SX - 40 : SX + i * SW + SW / 2, yAt = i => i < 0 ? GROUND : GROUND - SH * (i + 1);
+  const fx = mix(xAt(cur - 1), xAt(cur), ease(hop)), fy = mix(yAt(cur - 1), yAt(cur), ease(hop)) - Math.sin(hop * Math.PI) * 50;
+  let dp = cur < 0 ? POSE.stand() : (hop < 1 ? POSE.climb(hop * 6) : POSE.stand());
+  const top = t > 7.9;
+  if (top) dp = lerpPose(POSE.stand(), POSE.cheer(t), ease(P(t, 7.9, 8.4)));
+  const df = figure(fx, fy - legDrop(dp, SC), dp, { scale: SC, glow: top ? .12 * P(t, 7.9, 8.4) : 0 });
+  MM.solid(SX, GROUND - SH * Math.max(1, built), SX + SW * NS, GROUND, 'stairs');
+}
+window.frame = t => MM.render(t, DUR, scene);
+</script></body></html>

@@ -1,0 +1,55 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+@font-face{font-family:SM;font-weight:400;src:url(fonts/space-mono-latin-400-normal.woff2)}
+@font-face{font-family:SM;font-weight:700;src:url(fonts/space-mono-latin-700-normal.woff2)}
+@font-face{font-family:SF;font-weight:400;font-style:normal;src:url(fonts/instrument-serif-latin-400-normal.woff2)}
+@font-face{font-family:SF;font-weight:400;font-style:italic;src:url(fonts/instrument-serif-latin-400-italic.woff2)}
+html,body{margin:0;background:#000}canvas{display:block}</style></head><body><canvas id="c" width="1080" height="1920"></canvas>
+<script src="page.js"></script><script src="engine.js"></script><script>
+// ================================================================
+// REEL NNN: <LABEL A> vs <LABEL B>           STRUCTURE: <A-E>
+// MOMENT:  <the everyday moment everyone has lived>
+// COUNTER: <what visibly grows or drains, from -> to>
+// STING:   <the last-second line or physical punchline>
+// SEND TO: <the specific person the caption names>
+// ================================================================
+// LAYOUT (1080x1920):
+//   top caption y 330-400 (captions()) | counter pill / labels y 480-560 (single stage) or SPLIT.mid (split)
+//   SPLIT.top panel y 420-920 | SPLIT.bot panel y 1010-1510 | single-stage ground ~y 1450
+//   watermark y 1600 (engine draws it) | keep everything between x 40 and x 1040 | nothing important below y 1650
+//   register props text must not cover: MM.solid(x0, y0, x1, y1, 'name')
+const DUR = 12, COVER_T = 10.5;                       // 11-14 s. Fades in/out on black so it loops.
+window.COVER_TEXT = ['Serif headline with', 'italic ending.'];   // cover image line: "X beats" + "Y."
+
+// ---------- OPTION 1: SPLIT SCREEN (structure A) ----------
+function side(p, t, isTop) {
+  // backdrop: windowFrame(x,y,w,h,day) door(x,y,s,open) lamp(x,y,s,on) bed(x,y,w,s) table(x,y,w,s) chair(x,y,s)
+  const pose = isTop ? POSE.slump() : POSE.stand();
+  const f = figure(p.x0 + 500, p.ground - legDrop(pose, .6), pose, { scale: .6, col: isTop ? COL.grey : COL.ink, glow: isTop ? 0 : .1 });
+  return f;
+}
+function scene(t) {
+  captions(t, [
+    [0.6, 'SAME <UNIT>.'],
+    [7.5, 'SAME <UNIT>.', 'DIFFERENT <RESULT>.'],     // repeat line 1 so it stays put; in the sfx file pass '' for it
+  ]);
+  let fTop;
+  panel(SPLIT.top, p => { fTop = side(p, t, true) }, { warm: .15, label: 'LABEL A' });
+  panel(SPLIT.bot, p => side(p, t, false), { warm: .9, label: 'LABEL B' });
+  counter('DAY ' + Math.max(1, Math.round(90 * ease(P(t, .8, 7)))), W / 2, SPLIT.mid);
+  // bubbles go AFTER the panels so they are never clipped. bubble(text, x, y, t0, t, {thought, angry, size})
+  bubble('THE STING LINE.', fTop.head[0], fTop.head[1] - 40, 9.5, t, { size: 28 });
+}
+
+// ---------- OPTION 2: ONE STAGE (structures B-E): uncomment and delete option 1 ----------
+// const GROUND = 1450;
+// function scene(t) {
+//   ground(GROUND); spotlight(300, 620, 520, 840, .06); spotlight(800, 620, 520, 840, .06);
+//   captions(t, [[0.6, 'SHORT LINE.']]);
+//   counter('DAY 1', W / 2, 480); tag('LABEL A', 270, 560, { align: 'center' }); tag('LABEL B', 810, 560, { align: 'center' });
+//   const a = figure(270, GROUND - legDrop(POSE.stand(), .62), POSE.stand(), { scale: .62 });
+//   const b = figure(810, GROUND - legDrop(POSE.walk(t * 7), .62), POSE.walk(t * 7), { scale: .62 });
+//   // crowd(n, x0, x1, groundY, t, {scale, rows, walk, speed, col}) for one-vs-the-crowd reels
+//   // figureMeter(hx, hy, pose, level 0..1, {scale}) for body-as-energy-meter reels
+// }
+window.frame = t => MM.render(t, DUR, scene);
+</script></body></html>

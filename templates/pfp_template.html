@@ -1,0 +1,34 @@
+<!doctype html><html><head><meta charset="utf-8"><style>html,body{margin:0;background:#000}canvas{display:block}</style></head><body><canvas id="c" width="1080" height="1080"></canvas>
+<script src="page.js"></script><script src="engine.js"></script><script>
+// Profile picture / logo options, drawn in the page's accent colour.
+// Copy into engine/ and run:  node snap.js pfp_template.html pfp_A.png 1080 1080 A   (then B, C, and CUSTOM if you wrote one)
+// Then: python3 pfp_preview.py pfp_preview.png pfp_A.png pfp_B.png pfp_C.png   (shows them in Instagram's circle)
+// Keep everything inside the middle circle (radius ~470 around 540,540): Instagram crops the corners.
+const S = 1.35;
+function bgSq() { const bg = g.createRadialGradient(540, 540, 60, 540, 540, 760); bg.addColorStop(0, '#24262c'); bg.addColorStop(1, '#030303'); g.fillStyle = bg; g.fillRect(0, 0, 1080, 1080) }
+function vign() { const vg = g.createRadialGradient(540, 540, 330, 540, 540, 760); vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,.65)'); g.fillStyle = vg; g.fillRect(0, 0, 1080, 1080) }
+const CONCEPTS = {
+  A() { // climbing: a figure stepping onto the accent-coloured top step
+    bgSq(); const base = 930, sw = 210, sh = 100, x0 = 225;
+    for (let i = 0; i < 3; i++) { g.fillStyle = i == 2 ? COL.accent : (i == 1 ? '#d9d9d9' : '#9a9a9a'); g.fillRect(x0 + i * sw, base - (i + 1) * sh, sw, (i + 1) * sh) }
+    const top = base - 3 * sh, pose = POSE.walk(1.1); figure(x0 + 2 * sw + 95, top - legDrop(pose, S * .85), pose, { scale: S * .85, glow: .12 }); vign();
+  },
+  B() { // moving forward: grey slumped figure becoming a white figure in stride
+    bgSq(); const gy = 900;
+    g.strokeStyle = 'rgba(255,255,255,.85)'; g.lineWidth = 8; g.lineCap = 'round'; g.beginPath(); g.moveTo(120, gy); g.lineTo(960, gy); g.stroke();
+    [[300, POSE.slump(), .2], [470, lerpPose(POSE.slump(), POSE.walk(1.2), .45), .42], [680, POSE.walk(1.2), 1]].forEach(([x, p, a], i) => { FA = a; figure(x, gy - legDrop(p, S), p, { scale: S, col: i == 2 ? COL.ink : '#8a8f98', glow: i == 2 ? .1 : 0 }); FA = 1 });
+    g.fillStyle = COL.accent; g.beginPath(); g.arc(850, 250, 62, 0, 7); g.fill(); vign();
+  },
+  C() { // silhouette walking across a big accent-coloured sun
+    bgSq(); const cx = 540, cy = 540, R = 360, gy = 790;
+    g.fillStyle = COL.accent; g.beginPath(); g.arc(cx, cy, R, 0, 7); g.fill();
+    g.save(); g.beginPath(); g.arc(cx, cy, R, 0, 7); g.clip(); g.fillStyle = '#0b0b0c'; g.fillRect(0, gy, 1080, 600);
+    const p = POSE.walk(1.35); figure(560, gy - legDrop(p, S), p, { scale: S, col: '#0b0b0c' });
+    [-150, -90, -30].forEach((dy, i) => { g.strokeStyle = '#0b0b0c'; g.globalAlpha = .85 - i * .2; g.lineWidth = 14; g.lineCap = 'round'; g.beginPath(); g.moveTo(255 + i * 20, gy + dy - 150); g.lineTo(365 + i * 20, gy + dy - 150); g.stroke() }); g.globalAlpha = 1; g.restore();
+  },
+  CUSTOM() { // Claude writes the owner's described logo here, using the same figure(), POSE and props as the reels.
+    bgSq(); label('DESCRIBE YOUR LOGO', 540, 540, 40, '#fff', 700); vign();
+  },
+};
+window.draw = k => { g.clearRect(0, 0, 1080, 1080); FA = 1; (CONCEPTS[k] || CONCEPTS.A)() };
+</script></body></html>

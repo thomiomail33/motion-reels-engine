@@ -1,0 +1,66 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+@font-face{font-family:SM;font-weight:400;src:url(fonts/space-mono-latin-400-normal.woff2)}
+@font-face{font-family:SM;font-weight:700;src:url(fonts/space-mono-latin-700-normal.woff2)}
+@font-face{font-family:SF;font-weight:400;font-style:normal;src:url(fonts/instrument-serif-latin-400-normal.woff2)}
+@font-face{font-family:SF;font-weight:400;font-style:italic;src:url(fonts/instrument-serif-latin-400-italic.woff2)}
+html,body{margin:0;background:#000}canvas{display:block}</style></head><body><canvas id="c" width="1080" height="1920"></canvas>
+<script src="page.js"></script><script src="engine.js"></script><script>
+// ================================================================
+// REEL 001: 10PM PHONE vs 10PM BOOK          STRUCTURE: A (split screen, same day)
+// MOMENT:  going to bed and "just checking" the phone
+// COUNTER: clock 10:00 PM -> 2:00 AM -> 7:00 AM
+// STING:   phone guy at 7am: "WHY AM I ALWAYS TIRED?"
+// SEND TO: the friend who scrolls till 2am
+// ================================================================
+const DUR = 12, COVER_T = 10.6;
+window.COVER_TEXT = ['Sleep is decided', 'the night before.'];
+const S = .62;                               // figure scale inside panels
+const clockMin = t => t < 5.4 ? 1320 + 240 * ease(P(t, .6, 5.4)) : 1560 + 300 * ease(P(t, 5.4, 6.0));
+const dayK = t => ease(P(t, 5.5, 6.3));
+
+function sleeper(p, t, isPhone) {
+  windowFrame(p.x0 + 700, p.y0 + 70, 230, 170, dayK(t));
+  const b = bed(p.x0 + 70, p.ground, 540, 1, { blanket: false });
+  const hipLie = [p.x0 + 290, b.top - 8];
+  if (!isPhone) lamp(p.x0 + 680, p.ground - 70, .9, t < 3.3 ? 1 : 1 - P(t, 3.3, 3.5));
+  if (!isPhone) { g.fillStyle = '#2a2d36'; g.fillRect(p.x0 + 650, p.ground - 70, 70, 70) }   // nightstand
+  // getting up: bottom (book) gets up early and bright; top (phone) late, slow and grey
+  const upA = isPhone ? 7.6 : 6.3, upB = isPhone ? 8.8 : 7.0;
+  const k = ease(P(t, upA, upB));
+  const standPose = isPhone ? POSE.slump() : (t > 7.1 ? lerpPose(POSE.stand(), POSE.stretch(), ease(P(t, 7.1, 7.6)) * (1 - ease(P(t, 9.4, 10)))) : POSE.stand());
+  let pose;
+  if (k <= 0) pose = isPhone ? (t < 5.4 ? POSE.holdUp() : lerpPose(POSE.holdUp(), POSE.lie(), P(t, 5.4, 5.8))) : (t < 3.0 ? POSE.holdUp() : lerpPose(POSE.holdUp(), POSE.lie(), P(t, 3.0, 3.4)));
+  else pose = lerpPose(POSE.lie(), standPose, k);
+  const hipStand = [p.x0 + 820, p.ground - legDrop(standPose, S)];
+  const hx = mix(hipLie[0], hipStand[0], k), hy = mix(hipLie[1], hipStand[1], k) - Math.sin(k * Math.PI) * 30;
+  const col = isPhone ? (t > 6 ? '#9aa0a8' : COL.ink) : COL.ink;
+  const glowA = !isPhone && t > 7.0 ? .12 * P(t, 7.0, 7.6) : 0;
+  const f = figureRot(hx, hy, pose, mix(-90, 0, k), { scale: S, col, glow: glowA });
+  if (k < .35) { g.globalAlpha = FA * (1 - k / .35); g.fillStyle = '#4a5a8a'; rr(hipLie[0] - 20, b.top - 24, 330, 34, 12); g.fill(); g.globalAlpha = FA }   // blanket over the legs
+  // hand-held prop while lying
+  if (k <= 0) {
+    const [px, py] = f.handF;
+    if (isPhone && t < 5.6) phone(px, py + 8, .8, .7 + .3 * Math.sin(t * 13) * Math.sin(t * 5), 0);
+    if (!isPhone && t < 3.2) book(px + 4, py + 22, .8, 1);
+    if (isPhone && t < 5.6) glow(f.head[0], f.head[1], 40, .22, '150,190,255');
+  }
+  if (!isPhone && t > 3.5 && t < 6.2) zzz(f.head[0] + 20, f.head[1] - 20, t, 1);
+  if (isPhone && t > 6.0 && t < 7.6) zzz(f.head[0] + 20, f.head[1] - 20, t, 1);
+  return f;
+}
+
+function scene(t) {
+  captions(t, [
+    [0.6, 'SAME NIGHT.'],
+    [6.0, 'SAME NIGHT.', 'DIFFERENT MORNING.'],
+  ]);
+  let fTop;
+  panel(SPLIT.top, p => { fTop = sleeper(p, t, true) }, { warm: .15, label: '10 PM: PHONE' });
+  panel(SPLIT.bot, p => sleeper(p, t, false), { warm: mix(.55, 1, dayK(t)), label: '10 PM: BOOK' });
+  counter(clockText(clockMin(t)), W / 2, SPLIT.mid);
+  // bubbles (drawn outside the panel clip so they never get cut)
+  if (t > 1.6 && t < 5.3) bubble('JUST ONE MORE VIDEO.', fTop.head[0] + 230, fTop.head[1] - 110, 1.6, t, { thought: true, size: 26 });
+  if (t > 9.0) bubble('WHY AM I ALWAYS TIRED?', fTop.head[0] - 40, fTop.head[1] - 46, 9.0, t, { size: 28 });
+}
+window.frame = t => MM.render(t, DUR, scene);
+</script></body></html>
